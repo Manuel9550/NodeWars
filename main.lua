@@ -46,7 +46,6 @@ function love.load()
 
   NodeArray[startx][starty] = Node:new(startx * NodeOffsets, starty * NodeOffsets ,NodeRadius, startx, starty)
   NodeArray[startx][starty].IsConected = true
-  print(NodeArray[startx][starty].IsConected)
   TestStartNode = startx .. " " .. starty
   -- this array will store all our connected Nodes
 
@@ -57,12 +56,6 @@ function love.load()
   -- initialize the node and use Prims algorithm to connect the nodes
   AllNodesConnected = false
   DebugCount = 0
-
-  -- debugging
-  for count = 1, #ConnectedNodes do
-      print(ConnectedNodes[count].gridX, ConnectedNodes[count].gridY, ConnectedNodes[count].IsConected)
-  end
-  print("---------------------------------------------------------------------")
 
   while not AllNodesConnected do
       DebugCount = DebugCount + 1;
@@ -98,12 +91,6 @@ function love.load()
         CurrentBestNode1 = {}
         CurrentBestNode2 = {}
 
-        -- debugging
-        for count = 1, #PossibleNodesToAdd do
-            print("[",PossibleNodesToAdd[count].NodeInNetwork.gridX, "|", PossibleNodesToAdd[count].NodeInNetwork.gridY, "]","[",PossibleNodesToAdd[count].NodeToAdd.gridX, "|", PossibleNodesToAdd[count].NodeToAdd.gridY, "]")
-        end
-        print("+++++++++++++++++++++++++++++++++++++++++++")
-
         currentBestNode = 100000 -- arbitrarily large number
         for count = 1, #PossibleNodesToAdd do
 
@@ -111,14 +98,12 @@ function love.load()
             Node1 = PossibleNodesToAdd[count].NodeInNetwork
             Node2 = PossibleNodesToAdd[count].NodeToAdd
 
-            print("Current ConnectedNode:", Node1.gridX, "|", Node1.gridY, " -- ", "Node to Add:", Node2.gridX, "|", Node2.gridY)
-
             currentWeight = FindNodeWeight(Node1,Node2)
             if currentWeight <= currentBestNode then
               CurrentBestNode1 = Node1
               CurrentBestNode2 = Node2
               currentBestNode = currentWeight
-                print("Current NEW BEST ConnectedNode:", CurrentBestNode1.gridX, "|", CurrentBestNode1.gridY, " -- ", "NEW Node to Add:", CurrentBestNode2.gridX, "|", CurrentBestNode2.gridY, " Weight:",currentBestNode)
+
             end
 
         end
@@ -129,13 +114,6 @@ function love.load()
         CurrentBestNode2.IsConnected = true;
         table.insert(ConnectedNodes,CurrentBestNode2)
       end
-
-
-      -- debugging
-      for count = 1, #ConnectedNodes do
-          print(ConnectedNodes[count].gridX, ConnectedNodes[count].gridY, ConnectedNodes[count].IsConnected)
-      end
-      print("-----------------Connected Nodes-----------------------")
   end
 
 
