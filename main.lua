@@ -1,6 +1,7 @@
 require "Node"
 require "CameraController"
 --local gamera = require 'gamera'
+require('mobdebug').on()
 math.randomseed(os.time())
 NodeChance = 10 -- out of 100, how likely is it that a node will form in each square
 NodeChanceOffset = 5
@@ -153,6 +154,10 @@ end
 --called once every frame.. dt is delta time. Usually will be called 60 times a second
 function love.update(dt)
 
+  -- update the camera if it's moving to a node
+  SceneCameraController:MoveToNode()
+
+
   testX, testY = SceneCameraController:GetCamera():getVisibleCorners()
   -- check to see if we need to move the camera
   if love.keyboard.isDown( "left" ) then
@@ -204,9 +209,13 @@ function love.draw()
   end)
   love.graphics.print(SceneCameraController.x, 0, 0)
   love.graphics.print(SceneCameraController.y, 0, 20)
-  love.graphics.print(SceneCameraController.maxX, 0, 40)
-  love.graphics.print(SceneCameraController.maxY, 0, 60)
-  love.graphics.print(testY, 0, 80)
+  if SceneCameraController.SelectedNodeX ~= nil then
+    
+    love.graphics.print(SceneCameraController.SelectedNodeX, 0, 40)
+    love.graphics.print(SceneCameraController.SelectedNodeY, 0, 60)
+    --love.graphics.print(SceneCameraController.Magnitude, 0, 80)
+  end
+
 end
 
 -- draws the nodes to the screen
@@ -288,6 +297,9 @@ function love.mousepressed(x,y,b, isTouch)
         currentNode = NodeArray[i][j]
         if currentNode ~= nil and currentNode:IsPressed(worldX,worldY) then
           NodeArray[i][j]:ToggleNode()
+          
+          -- set this as the selected node for the camera
+          SceneCameraController:SelectNode(NodeArray[i][j].x, NodeArray[i][j].y)
           break
         end
 

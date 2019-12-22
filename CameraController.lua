@@ -4,7 +4,7 @@ local gamera = require 'gamera'
 -- in the game scene
 
 -- basic defaults for the camera controller
-CameraController = {x = 250, y = 250, velocity = {x = 0, y = 0}, maxScale = 10, minScale = 0.1, camera = nil, maxX = 0, minX = 0, maxY = 0, minY = 0, scale = 1.0}
+CameraController = {x = 250, y = 250, velocity = {x = 0, y = 0}, maxScale = 5, minScale = 0.1, camera = nil, maxX = 0, minX = 0, maxY = 0, minY = 0, scale = 1.0, SelectedNodeX = nil, SelectedNodeY = nil, Magnitude = nil}
 
 
 
@@ -101,4 +101,48 @@ function CameraController:SlideCamera(direction, distance)
       self:ChangePosition(self.x + distanceToBorder, self.y)
     end
   end
+end
+
+function CameraController:MoveToNode()
+  if self.SelectedNodeX ~= nil and self.SelectedNodeY ~= nil then
+    -- get the direction of the Node
+      xDirection = self.SelectedNodeX - self.x
+      yDirection = self.SelectedNodeY - self.y
+      
+      
+      
+      -- get the magnitude of the vector
+      magnitude = math.sqrt((xDirection * xDirection) + (yDirection * yDirection))
+      self.Magnitude = magnitude
+      -- if the magnitude is less than or equal to about 20 pixels, don't bother moving the camera
+      
+      if magnitude <= 20 then
+        self.SelectedNodeX = nil
+        self.SelectedNodeY = nil
+        
+      else
+         -- get the unit vector
+        uX = xDirection / magnitude
+        uY = yDirection / magnitude
+      
+        scale = magnitude / 10
+      
+        if scale < 5 then
+          scale = 5
+        end
+        
+        -- move the camera towards the selected node
+        self:ChangePosition(self.x + (uX * scale), self.y + (uY * scale))
+        
+        -- gradually make the window smaller to focus on the node
+        self:ChangeScale(self.scale + 0.1)
+      end
+      
+  end
+end
+
+
+function CameraController:SelectNode(x,y)
+  self.SelectedNodeX = x
+  self.SelectedNodeY = y
 end
