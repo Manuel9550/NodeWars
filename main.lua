@@ -1,5 +1,6 @@
 require "Node"
-
+require "CameraController"
+--local gamera = require 'gamera'
 math.randomseed(os.time())
 NodeChance = 10 -- out of 100, how likely is it that a node will form in each square
 NodeChanceOffset = 5
@@ -11,12 +12,33 @@ height = 15
 NodeRadius = 10
 NodeOffsets = 30
 
+-- the game scenes width and height will always be the max allowed columns and rows + 1
+GameScene  = { w = (NodeOffsets * length) + (NodeOffsets * 1), h = (NodeOffsets * height) + (NodeOffsets * 1) }
 
 -- debug stuff
 testCount = 0
 NodesTested = {}
 TestString = ""
 TestStartNode = ""
+
+testY = 0
+-- instead of using the gamera directly, use the CameraController to allow moving between nodes and such
+--[[
+-- camera stuff
+cam = gamera.new(0,0,GameScene.w, GameScene.h)
+
+cameraX = length * NodeOffsets / 2
+cameraY = height * NodeOffsets / 2
+
+cam:setPosition(cameraX, cameraY)
+
+cam:setWindow(30, 30, GameScene.w, GameScene.h)
+
+--camera scale
+CameraScale = 1.0
+--]]
+
+SceneCameraController = CameraController:new(length * NodeOffsets / 2,height * NodeOffsets / 2, GameScene.w,GameScene.h, 30,30)
 
 -- Runs immediately when the game starts. Put pre-game prep stuff here
 function love.load()
@@ -59,11 +81,6 @@ function love.load()
 
   while not AllNodesConnected do
       DebugCount = DebugCount + 1;
-      --if DebugCount > 100 then
-      --  AllNodesConnected = true
-      --end
-
-
 
       PossibleNodesToAdd = {}
       for count = 1, #ConnectedNodes do
@@ -117,24 +134,83 @@ function love.load()
   end
 
 
-  --[[
-  currentNode = FindClosestNode(startx,starty)
-  while currentNode ~= nil  do
-      currentNode = FindClosestNode(currentNode.i, currentNode.j)
-  end
-  ]]--
+  -- setting up the camera world and position here
+  
+
+ 
   myfont = love.graphics.newFont(15)
+end
+
+-- callback for when the mousewheel moves
+function love.wheelmoved(x, y)
+    if y > 0 then
+      SceneCameraController:ChangeScale(SceneCameraController.scale + 0.1)
+    elseif y < 0 then      
+      SceneCameraController:ChangeScale(SceneCameraController.scale - 0.1)
+    end
 end
 
 --called once every frame.. dt is delta time. Usually will be called 60 times a second
 function love.update(dt)
 
+  testX, testY = SceneCameraController:GetCamera():getVisibleCorners()
+  -- check to see if we need to move the camera
+  if love.keyboard.isDown( "left" ) then
+     SceneCameraController:SlideCamera("left",1)
+  end
+   
+   if love.keyboard.isDown( "right" ) then
+     SceneCameraController:SlideCamera("right",1)
+   end
+   
+   if love.keyboard.isDown( "up" ) then
+    SceneCameraController:SlideCamera("up",1)
+   end
+   
+   if love.keyboard.isDown( "down" ) then
+    SceneCameraController:SlideCamera("down",1)
+   end
+   
+   if love.keyboard.isDown( "space" ) then
+      -- reset the camera back to the default position
+      cameraX = length * NodeOffsets / 2
+      cameraY = height * NodeOffsets / 2
+
+      SceneCameraController:ChangePosition(cameraX, cameraY)
+      
+      SceneCameraController:ChangeScale(1.0)
+   end
+   
 end
 
 -- draws stuff to the screen.
 function love.draw()
-  --love.graphics.setColor(1, 0,0)
-  --love.graphics.circle("fill", button.x, button.y, button.size)
+
+
+
+  -- draw the bakcground to be white
+  love.graphics.setColor(1,1,1)
+  love.graphics.rectangle("fill", 0, 0, NodeOffsets * length * 2, NodeOffsets * height * 2)
+  love.graphics.setColor(0,0,1)
+  
+  -- draw the game background to be black
+  love.graphics.setColor(0,0,0)
+  love.graphics.rectangle("fill", 30, 30, GameScene.w,GameScene.h)
+  love.graphics.setColor(0,0,1)
+
+  SceneCameraController:GetCamera():draw(function(l,t,w,h)
+    -- draw camera stuff here
+    DrawNodes()
+  end)
+  love.graphics.print(SceneCameraController.x, 0, 0)
+  love.graphics.print(SceneCameraController.y, 0, 20)
+  love.graphics.print(SceneCameraController.maxX, 0, 40)
+  love.graphics.print(SceneCameraController.maxY, 0, 60)
+  love.graphics.print(testY, 0, 80)
+end
+
+-- draws the nodes to the screen
+function DrawNodes()
   for i=1,height do
     for j=1,length do
 
@@ -142,12 +218,19 @@ function love.draw()
 
       if currentNode ~= nil and currentNode.IsOn then
 
-            love.graphics.circle("fill", currentNode.x,  currentNode.y, currentNode.radius)
-
+          love.graphics.circle("fill", currentNode.x,  currentNode.y, currentNode.radius)
+      elseif currentNode ~= nil and (currentNode.IsOn == false) then
+      
+          love.graphics.setColor(1,0,0)
+          love.graphics.circle("fill", currentNode.x,  currentNode.y, currentNode.radius)
+          love.graphics.setColor(0,0,1)
       end
+    
+    
 
     end
   end
+
 
   -- draw each connector
   for ConnectorCount = 1, #ConnectionArray do
@@ -162,15 +245,9 @@ function love.draw()
   end
 
 
-  --[[ debug
-  for count = 1, #ConnectedNodes do
-    OutputStringtest =   ConnectedNodes[count].gridX .. "|" .. ConnectedNodes[count].gridY
-  end
-  ]]--
-
   love.graphics.setFont(myfont)
   love.graphics.setColor(0,0,1)
-  love.graphics.print(OutputStringtest)
+  
 end
 
 -- calculates whether a node should spawn in this square
@@ -204,12 +281,13 @@ end
 function love.mousepressed(x,y,b, isTouch)
   if b == 1 then
 
+    worldX, worldY = cam:toWorld(x,y)
     -- loop through every node, and try to see if the mouse pressed on any
     for i=1,height do
       for j=1,length do
         currentNode = NodeArray[i][j]
-        if currentNode ~= nil and currentNode:IsPressed(x,y) then
-          NodeArray[i][j].IsOn = false
+        if currentNode ~= nil and currentNode:IsPressed(worldX,worldY) then
+          NodeArray[i][j]:ToggleNode()
           break
         end
 

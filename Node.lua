@@ -31,7 +31,7 @@ function Node:new(xPosition, yPosition, newRadius, gridPositionx, gridPositiony)
   o.radius = newRadius or Node.radius
   o.gridX = gridPositionx or Node.gridX
   o.gridY = gridPositiony or Node.gridY
-
+  o.isConnected = true
   self.__index = self
   return o
 end
